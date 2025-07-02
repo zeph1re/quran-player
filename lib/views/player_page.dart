@@ -7,79 +7,77 @@ import 'package:quran_player/bloc/player_page/player_page_state.dart';
 import 'package:quran_player/repository/quran_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class PlayerPage extends StatefulWidget {
-  final int number;
+  final int surahNumber;
 
-  const PlayerPage({super.key, required this.number});
+  const PlayerPage({super.key, required this.surahNumber});
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
 }
 
 class _PlayerPageState extends State<PlayerPage> {
-  late AudioPlayer _player;
+  final AudioPlayer audioPlayer = AudioPlayer();
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _isPlaying = false;
-  late SharedPreferences _prefs;
+  SharedPreferences? _prefs;
 
   @override
   void initState() {
     super.initState();
-    _player = AudioPlayer();
     _initPrefs();
+
+
   }
 
   Future<void> _initPrefs() async {
-    _prefs = await SharedPreferences.getInstance();
+    // _prefs = await SharedPreferences.getInstance();
   }
 
-  Future<void> _setupAudio(String audioUrl, int surahNomor) async {
-    final savedPosition = _prefs.getInt('pos_$surahNomor') ?? 0;
-    await _player.setUrl(audioUrl);
-    await _player.seek(Duration(seconds: savedPosition));
 
-    _player.positionStream.listen((pos) {
-      setState(() => _position = pos);
-      _prefs.setInt('pos_$surahNomor', pos.inSeconds);
+
+  Future<void> _setupAudioPlayer(String url) async {
+    final saved = _prefs?.getInt('pos_${widget.surahNumber}') ?? 0;
+    await audioPlayer.setUrl(url);
+    await audioPlayer.seek(Duration(seconds: saved));
+    audioPlayer.positionStream.listen((p) {
+      setState(() => _position = p);
+      _prefs?.setInt('pos_${widget.surahNumber}', p.inSeconds);
     });
-
-    _player.durationStream.listen((dur) {
-      if (dur != null) setState(() => _duration = dur);
+    audioPlayer.durationStream.listen((d) {
+      if (d != null) setState(() => _duration = d);
     });
   }
 
-  void _togglePlayback() async {
+
+
+  void _togglePlay() async {
     if (_isPlaying) {
-      await _player.pause();
+      await audioPlayer.pause();
     } else {
-      await _player.play();
+      await audioPlayer.play();
     }
     setState(() => _isPlaying = !_isPlaying);
   }
 
-  void _seek(double value) {
-    final newPos = Duration(seconds: value.toInt());
-    _player.seek(newPos);
-  }
-
-  String _format(Duration dur) {
-    final m = dur.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = dur.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$m:$s";
-  }
-
   @override
   void dispose() {
-    _player.dispose();
+    audioPlayer.dispose();
     super.dispose();
+  }
+
+  String timeFormat(Duration d) {
+    final h = d.inHours.remainder(60).toString().padLeft(2, '0');
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$h:$m:$s";
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PlayerPageBloc(QuranRepository())..add(FetchDetailSurah(widget.number)),
+      create: (_) => PlayerPageBloc(QuranRepository())..add(FetchDetailSurah(widget.surahNumber)),
       child: Scaffold(
         appBar: AppBar(title: const Text('Detail Surah')),
         body: BlocBuilder<PlayerPageBloc, PlayerPageState>(
@@ -88,50 +86,55 @@ class _PlayerPageState extends State<PlayerPage> {
               return const Center(child: CircularProgressIndicator());
             } else if (state is PlayerPageLoaded) {
               final surah = state.surahDetail;
-
-              // Mulai setup audio player jika belum
-              _setupAudio(surah.audio, surah.number);
+              _setupAudioPlayer(surah.audio);
 
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text('${surah.latinName} (${surah.meaning})', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
+                  Center(
+                    child: Text(surah.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(
+                    child:Text('${surah.latinName} (${surah.meaning})', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 8),
                   Text('${surah.totalVerses} ayat - ${surah.landingPlace.toUpperCase()}'),
                   const SizedBox(height: 12),
                   Text(surah.description.replaceAll(RegExp(r'<[^>]*>'), '')),
                   const SizedBox(height: 20),
-
-                  // AUDIO PLAYER
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      ElevatedButton.icon(
-                        icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                        label: Text(_isPlaying ? 'Pause Audio' : 'Play Audio'),
-                        onPressed: _togglePlayback,
-                      ),
-                      Slider(
-                        value: _position.inSeconds.toDouble(),
-                        max: _duration.inSeconds.toDouble() > 0 ? _duration.inSeconds.toDouble() : 1,
-                        onChanged: _seek,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(_format(_position)),
-                          Text(_format(_duration)),
-                        ],
-                      ),
+                      Text(timeFormat(_position)),
+                      Text(timeFormat(_duration - _position)),
                     ],
                   ),
+                  Slider(
+                    min: 0,
+                    value: _position.inSeconds.toDouble(),
+                    max: _duration.inSeconds.toDouble().clamp(1, double.infinity),
+                    onChanged: (v) => audioPlayer.seek(Duration(seconds: v.toInt())),
+                  ),
 
-                  const Divider(height: 32),
-                  const Text('Daftar Ayat:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  // ...surah.verses.map((a) => ListTile(
-                  //   title: Text(a!.arabicText, textAlign: TextAlign.right, style: const TextStyle(fontSize: 20)),
-                  //   subtitle: Text(a!.idnText),
+                  const SizedBox(height: 12),
+                  CircleAvatar(
+                    radius: 20,
+                    child: IconButton(
+                      icon: Icon(
+                          _isPlaying? Icons.pause : Icons.play_arrow,
+                      ),
+                      iconSize: 17,
+                      onPressed: _togglePlay
+                    ),
+
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  // const Text('Ayat-ayat:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  // ...s.verses.map((a) => ListTile(
+                  //   title: Text(a.arabicText, textAlign: TextAlign.right),
+                  //   subtitle: Text(a.idnText),
                   // )),
                 ],
               );

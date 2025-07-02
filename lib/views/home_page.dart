@@ -53,13 +53,13 @@ class _HomePageState extends State<HomePage> {
                     itemBuilder: (context, index) {
                       final surah = surahs[index];
                       return ListTile(
-                        title: Text('${surah.nomor}. ${surah.namaLatin}'),
-                        subtitle: Text('${surah.arti} - ${surah.tempatTurun} (${surah.jumlahAyat} ayat)'),
+                        title: Text('${surah.number}. ${surah.latinName}'),
+                        subtitle: Text('${surah.meaning} - ${surah.landingPlace} (${surah.totalVerses} ayat)'),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => PlayerPage( number: surah.nomor),
+                              builder: (_) => PlayerPage( surahNumber: surah.number),
                             ),
                           );
                         },

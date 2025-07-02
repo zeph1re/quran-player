@@ -1,13 +1,13 @@
 class SurahDetail {
-  late int number;
-  late String name;
-  late String latinName;
-  late int totalVerses;
-  late String landingPlace;
-  late String meaning;
-  late String description;
-  late String audio;
-  late List<Verses> verses;
+  final int number;
+  final String name;
+  final String latinName;
+  final int totalVerses;
+  final String landingPlace;
+  final String meaning;
+  final String description;
+  final String audio;
+  final List<Verses> verses;
 
   SurahDetail({
     required this.name,
@@ -17,20 +17,20 @@ class SurahDetail {
     required this.landingPlace,
     required this.meaning,
     required this.description,
-    required this.audio,
+    required this.audio ,
     required this.verses
   });
 
   factory SurahDetail.fromJson(Map<String, dynamic> json) {
     return SurahDetail(
       number: json['nomor'],
-      name: json['nama'],
-      latinName: json['namaLatin'],
+      name: json['nama'] ?? '',
+      latinName: json['nama_latin'] ?? '',
       totalVerses: json['jumlah_ayat'] ?? 0,
-      landingPlace: json['tempat_turun'],
-      meaning: json['arti'],
-      description: json['deskripsi'],
-      audio: json['audio'],
+      landingPlace: json['tempat_turun'] ?? '',
+      meaning: json['arti'] ?? '',
+      description: json['deskripsi'] ?? '',
+      audio: json['audio'] ?? '',
       verses: (json['ayat'] as List).map((e) => Verses.fromJson(e)).toList(),
     );
   }
@@ -38,15 +38,13 @@ class SurahDetail {
 
 
 class Verses{
-  late int id;
-  late int surahNumber;
-  late int versesNumber;
-  late String arabicText;
-  late String latinText;
-  late String idnText;
+  final int surahNumber;
+  final int versesNumber;
+  final String arabicText;
+  final String latinText;
+  final String idnText;
 
   Verses({
-    required this.id,
     required this.surahNumber,
     required this.versesNumber,
     required this.arabicText,
@@ -56,12 +54,11 @@ class Verses{
 
   factory Verses.fromJson(Map<String, dynamic> json) {
     return Verses(
-      id: json['id'],
-      surahNumber: json['surah'],
-      versesNumber: json['nomor'],
-      arabicText: json['ar'],
-      latinText: json['tr'],
-      idnText: json['idn']
+      surahNumber: json['surah'] ?? '',
+      versesNumber: json['nomor'] ?? 0,
+      arabicText: json['ar'] ?? '',
+      latinText: json['tr'] ?? '',
+      idnText: json['idn'] ?? ''
     );
   }
 

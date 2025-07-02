@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../models/surah.dart';
 import '../models/surah_detail.dart';
@@ -10,7 +9,7 @@ class QuranRepository {
 
   Future<List<Surah>> fetchSurahList() async {
     final response = await http.get(Uri.parse(baseUrl));
-    log("Response: ${response.statusCode}");
+    // log("Response: ${response.statusCode}");
     if (response.statusCode == 200) {
       final List jsonList = jsonDecode(response.body);
       return jsonList.map((json) => Surah.fromJson(json)).toList();
@@ -21,11 +20,9 @@ class QuranRepository {
 
   Future<SurahDetail> fetchSurahDetail(int number) async {
     final response = await http.get(Uri.parse('$baseUrl/$number'));
-    log("Response: ${response.statusCode}");
-
+    // response 200
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
-      log("Response: ${json}");
       return SurahDetail.fromJson(json);
     } else {
       throw Exception('Gagal mengambil detail surah');

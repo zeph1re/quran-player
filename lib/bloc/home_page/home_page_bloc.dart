@@ -27,9 +27,9 @@ class HomePageBloc extends Bloc<HomePageEvent, HomePageState> {
   void onSearchSurah(SearchSurah event, Emitter<HomePageState> emit) {
     final query = event.query.toLowerCase();
     final filtered = surahList.where((surah) =>
-      surah.namaLatin.toLowerCase().contains(query) ||
-        surah. arti.toLowerCase().contains(query) ||
-        surah.nama.toLowerCase().contains(query)
+      surah.latinName.toLowerCase().contains(query) ||
+        surah. meaning.toLowerCase().contains(query) ||
+        surah.name.toLowerCase().contains(query)
     ).toList();
     emit(HomePageLoaded(listSurah: filtered));
   }

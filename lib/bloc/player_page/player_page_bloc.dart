@@ -7,17 +7,25 @@ class PlayerPageBloc extends Bloc<PlayerPageEvent, PlayerPageState>{
   final QuranRepository repository;
 
   PlayerPageBloc(this.repository) : super(PlayerPageInitial()) {
-   on<FetchDetailSurah>(onGetDetailSurah);
+    on<FetchDetailSurah>((event, emit) async {
+      emit(PlayerPageLoading());
+      try {
+        final detail = await repository.fetchSurahDetail(event.number);
+        emit(PlayerPageLoaded(detail));
+      } catch (e) {
+        emit(PlayerPageError(e.toString()));
+      }
+    });
   }
 
-  Future<void> onGetDetailSurah (FetchDetailSurah event, Emitter<PlayerPageState> emit) async {
-    emit(PlayerPageLoading());
-    try {
-      final detail = await repository.fetchSurahDetail(event.number);
-      emit(PlayerPageLoaded(detail));
-    } catch (e) {
-      emit(PlayerPageError(e.toString()));
-    }
-  }
+  // Future<void> onGetDetailSurah (FetchDetailSurah event, Emitter<PlayerPageState> emit) async {
+  //   emit(PlayerPageLoading());
+  //   try {
+  //     final detail = await repository.fetchSurahDetail(event.number);
+  //     emit(PlayerPageLoaded(detail));
+  //   } catch (e) {
+  //     emit(PlayerPageError(e.toString()));
+  //   }
+  // }
 
 }
