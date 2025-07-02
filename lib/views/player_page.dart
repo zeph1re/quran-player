@@ -1,150 +1,121 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:quran_player/bloc/player_page/player_page_bloc.dart';
 import 'package:quran_player/bloc/player_page/player_page_event.dart';
 import 'package:quran_player/bloc/player_page/player_page_state.dart';
 import 'package:quran_player/repository/quran_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class PlayerPage extends StatefulWidget {
+class PlayerPage extends StatelessWidget {
   final int surahNumber;
 
   const PlayerPage({super.key, required this.surahNumber});
 
   @override
-  State<PlayerPage> createState() => _PlayerPageState();
-}
-
-class _PlayerPageState extends State<PlayerPage> {
-  final AudioPlayer audioPlayer = AudioPlayer();
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  bool _isPlaying = false;
-  SharedPreferences? _prefs;
-
-  @override
-  void initState() {
-    super.initState();
-    _initPrefs();
-
-
-  }
-
-  Future<void> _initPrefs() async {
-    // _prefs = await SharedPreferences.getInstance();
-  }
-
-
-
-  Future<void> _setupAudioPlayer(String url) async {
-    final saved = _prefs?.getInt('pos_${widget.surahNumber}') ?? 0;
-    await audioPlayer.setUrl(url);
-    await audioPlayer.seek(Duration(seconds: saved));
-    audioPlayer.positionStream.listen((p) {
-      setState(() => _position = p);
-      _prefs?.setInt('pos_${widget.surahNumber}', p.inSeconds);
-    });
-    audioPlayer.durationStream.listen((d) {
-      if (d != null) setState(() => _duration = d);
-    });
-  }
-
-
-
-  void _togglePlay() async {
-    if (_isPlaying) {
-      await audioPlayer.pause();
-    } else {
-      await audioPlayer.play();
-    }
-    setState(() => _isPlaying = !_isPlaying);
-  }
-
-  @override
-  void dispose() {
-    audioPlayer.dispose();
-    super.dispose();
-  }
-
-  String timeFormat(Duration d) {
-    final h = d.inHours.remainder(60).toString().padLeft(2, '0');
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$h:$m:$s";
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PlayerPageBloc(QuranRepository())..add(FetchDetailSurah(widget.surahNumber)),
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Detail Surah')),
-        body: BlocBuilder<PlayerPageBloc, PlayerPageState>(
-          builder: (context, state) {
-            if (state is PlayerPageLoading) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is PlayerPageLoaded) {
-              final surah = state.surahDetail;
-              _setupAudioPlayer(surah.audio);
-
-              return ListView(
-                padding: const EdgeInsets.all(16),
+      create: (_) => PlayerPageBloc(QuranRepository())
+        ..add(LoadSurahDetail(surahNumber)),
+      child: BlocBuilder<PlayerPageBloc, PlayerPageState>(
+        builder: (context, state) {
+          if (state is PlayerPageLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is PlayerPageLoaded) {
+            final surah = state.surah;
+            return Scaffold(
+              appBar: AppBar(title: Text('${surah.latinName}')),
+              body: Column(
                 children: [
-                  Center(
-                    child: Text(surah.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Padding(
+                    padding: EdgeInsets.only(top: 32),
+                    child: Column(
+                      children: [
+                        Text(surah.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 10),
+                        Text(surah.meaning),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child:Text('${surah.latinName} (${surah.meaning})', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('${surah.totalVerses} ayat - ${surah.landingPlace.toUpperCase()}'),
-                  const SizedBox(height: 12),
-                  Text(surah.description.replaceAll(RegExp(r'<[^>]*>'), '')),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(timeFormat(_position)),
-                      Text(timeFormat(_duration - _position)),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_formatDuration(state.position)),
+                        Text(_formatDuration(state.duration)),
+                      ],
+                    ),
                   ),
                   Slider(
-                    min: 0,
-                    value: _position.inSeconds.toDouble(),
-                    max: _duration.inSeconds.toDouble().clamp(1, double.infinity),
-                    onChanged: (v) => audioPlayer.seek(Duration(seconds: v.toInt())),
+                    value: state.position.inSeconds.toDouble().clamp(0, state.duration.inSeconds.toDouble()),
+                    max: state.duration.inSeconds.toDouble(),
+                    onChanged: (value) {
+                      context.read<PlayerPageBloc>().add(
+                        SeekAudio(Duration(seconds: value.toInt())),
+                      );
+                    },
                   ),
-
-                  const SizedBox(height: 12),
-                  CircleAvatar(
-                    radius: 20,
-                    child: IconButton(
-                      icon: Icon(
-                          _isPlaying? Icons.pause : Icons.play_arrow,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.skip_previous),
+                        onPressed: state.surah.prevSurah != null
+                            ? () => context.read<PlayerPageBloc>().add(PreviousSurah())
+                            : null,
                       ),
-                      iconSize: 17,
-                      onPressed: _togglePlay
-                    ),
-
+                      IconButton(
+                        icon: Icon(
+                          state.isPlaying ? Icons.pause : Icons.play_arrow,
+                        ),
+                        onPressed: () {
+                          context.read<PlayerPageBloc>().add(
+                            state.isPlaying ? PauseAudio() : PlayAudio(),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next),
+                        onPressed: state.surah.nextSurah != null
+                            ? () => context.read<PlayerPageBloc>().add(NextSurah())
+                            : null,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  const Divider(),
-                  // const Text('Ayat-ayat:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  // ...s.verses.map((a) => ListTile(
-                  //   title: Text(a.arabicText, textAlign: TextAlign.right),
-                  //   subtitle: Text(a.idnText),
-                  // )),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: surah.verses.length,
+                      itemBuilder: (context, index) {
+                        final verse = surah.verses[index];
+                        return ListTile(
+                          title: Padding(padding: EdgeInsets.only(bottom: 30),
+                            child: Text(verse.arabicText, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.right,),
+                          ),
+                          subtitle: Text(verse.idnText),
+                        );
+                      },
+                    ),
+                  ),
                 ],
-              );
-            } else if (state is PlayerPageError) {
-              return Center(child: Text('Error: ${state.message}'));
-            }
-            return const SizedBox.shrink();
-          },
-        ),
+              ),
+            );
+          }
+          if (state is PlayerPageError) {
+            return Center(child: Text(state.message));
+          }
+          return const SizedBox();
+        },
       ),
     );
   }
+}
+
+String _formatDuration(Duration duration) {
+  String twoDigits(int n) => n.toString().padLeft(2, '0');
+  final hours = twoDigits(duration.inHours.remainder(60));
+  final minutes = twoDigits(duration.inMinutes.remainder(60));
+  final seconds = twoDigits(duration.inSeconds.remainder(60));
+  return "$hours:$minutes:$seconds";
 }

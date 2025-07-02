@@ -7,18 +7,11 @@ class HomePageInitial extends HomePageState{}
 class HomePageLoading extends HomePageState{}
 
 class HomePageLoaded extends HomePageState{
-
   final List<Surah> listSurah;
-
-  HomePageLoaded({
-    required this.listSurah
-  });
+  HomePageLoaded({required this.listSurah});
 }
 
 class HomePageError extends HomePageState{
   final String message;
-
-  HomePageError({
-   required this.message
-  });
+  HomePageError({required this.message});
 }

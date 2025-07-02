@@ -8,36 +8,25 @@ import 'package:quran_player/repository/quran_repository.dart';
 import 'package:quran_player/views/home_page.dart';
 
 void main() {
-  runApp(MyApp());
+  final QuranRepository repository = QuranRepository();
+  runApp(MyApp(repo: repository,));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final QuranRepository repo;
+  const MyApp({required this.repo});
 
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    // final int number;
-
-    return MultiBlocProvider(
-        providers: [
-          BlocProvider<HomePageBloc>(
-                create: (context) => HomePageBloc(QuranRepository())..add(GetSurahList()),
-            ),
-          // Add Other Block Provider Here
-          // BlocProvider<PlayerPageBloc>(
-          //   create: (context) => PlayerPageBloc(QuranRepository())..add(FetchDetailSurah(number)),
-          // ),
-          ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: "Quran Audio Player",
-          home: const HomePage(),
-      )
-      );
-
-
+    return MaterialApp(
+      title: 'Quran Audio',
+      debugShowCheckedModeBanner: false,
+      home: BlocProvider(
+        create: (_) => HomePageBloc(repo)..add(GetSurahList()),
+        child: HomePage(),
+      ),
+    );
   }
 }
-

@@ -6,37 +6,26 @@ import 'package:quran_player/bloc/home_page/home_page_state.dart';
 import 'package:quran_player/views/player_page.dart' show PlayerPage;
 
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
+class HomePage extends StatelessWidget {
   final TextEditingController _searchController = TextEditingController();
-
-  void _onSearchChanged(String query) {
-    context.read<HomePageBloc>().add(SearchSurah(query));
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Surah')),
+      appBar: AppBar(title: Text("Quran Audio Player")),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.all(8.0),
             child: TextField(
               controller: _searchController,
-              onChanged: _onSearchChanged,
+              onChanged: (value) {
+                context.read<HomePageBloc>().add(SearchSurah(value));
+              },
               decoration: InputDecoration(
+                hintText: "Search Surah...",
                 prefixIcon: Icon(Icons.search),
-                hintText: 'Cari surah...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                border: OutlineInputBorder(),
               ),
             ),
           ),
@@ -44,22 +33,21 @@ class _HomePageState extends State<HomePage> {
             child: BlocBuilder<HomePageBloc, HomePageState>(
               builder: (context, state) {
                 if (state is HomePageLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(child: CircularProgressIndicator());
                 } else if (state is HomePageLoaded) {
-                  final surahs = state.listSurah;
-                  if (surahs.isEmpty) return const Center(child: Text('Tidak ada hasil'));
                   return ListView.builder(
-                    itemCount: surahs.length,
+                    itemCount: state.listSurah.length,
                     itemBuilder: (context, index) {
-                      final surah = surahs[index];
+                      final surah = state.listSurah[index];
                       return ListTile(
-                        title: Text('${surah.number}. ${surah.latinName}'),
-                        subtitle: Text('${surah.meaning} - ${surah.landingPlace} (${surah.totalVerses} ayat)'),
+                        title: Text("${surah.number}. ${surah.latinName}"),
+                        subtitle: Text(surah.name),
+                        trailing: Text("${surah.totalVerses} Ayat"),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => PlayerPage( surahNumber: surah.number),
+                              builder: (_) => PlayerPage(surahNumber: surah.number,),
                             ),
                           );
                         },
@@ -67,9 +55,9 @@ class _HomePageState extends State<HomePage> {
                     },
                   );
                 } else if (state is HomePageError) {
-                  return Center(child: Text('Error: ${state.message}'));
+                  return Center(child: Text("Error: ${state.message}"));
                 }
-                return const SizedBox.shrink();
+                return SizedBox();
               },
             ),
           ),

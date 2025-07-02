@@ -1,6 +1,19 @@
-class PlayerPageEvent {}
+abstract class PlayerPageEvent {}
 
-class FetchDetailSurah extends PlayerPageEvent {
+class LoadSurahDetail extends PlayerPageEvent {
   final int number;
-  FetchDetailSurah(this.number);
+  LoadSurahDetail(this.number);
 }
+
+class PlayAudio extends PlayerPageEvent {}
+
+class PauseAudio extends PlayerPageEvent {}
+
+class SeekAudio extends PlayerPageEvent {
+  final Duration position;
+  SeekAudio(this.position);
+}
+
+class NextSurah extends PlayerPageEvent {}
+
+class PreviousSurah extends PlayerPageEvent {}
