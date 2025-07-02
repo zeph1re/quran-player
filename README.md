@@ -2,7 +2,9 @@
 
 Aplikasi pemutar audio Al-Qur'an berbasis Flutter dengan fitur play/pause, pencarian surah, dan navigasi antar surah.
 
-![Home Page](screenshots/home_page.jpg) { width: 200px; } ![Player Page](screenshots/player_page.jpg) ![Search Feature](screenshots/search_feature.jpg)
+![Home Page](screenshots/home_page.jpg =100x20) 
+![Player Page](screenshots/player_page.jpg =100x20) 
+![Search Feature](screenshots/search_feature.jpg =100x20)
 
 ## Features
 - Play / Pause audio Al-Qur'an
