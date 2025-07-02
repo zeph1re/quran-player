@@ -1,53 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quran_player/bloc/home_page/home_screen_bloc.dart';
-import 'package:quran_player/bloc/home_page/home_screen_event.dart';
-import 'package:quran_player/bloc/home_page/home_screen_state.dart';
-import 'package:quran_player/models/surah.dart';
-import 'package:quran_player/repository/quran_repository.dart';
-import 'package:quran_player/views/player_page.dart';
+import 'package:quran_player/bloc/home_page/home_page_bloc.dart';
+import 'package:quran_player/bloc/home_page/home_page_event.dart';
+import 'package:quran_player/bloc/home_page/home_page_state.dart';
+import 'package:quran_player/views/player_page.dart' show PlayerPage;
 
-class HomePage extends StatelessWidget {
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  void _onSearchChanged(String query) {
+    context.read<HomePageBloc>().add(SearchSurah(query));
+  }
+
+  @override
   Widget build(BuildContext context) {
-
-
-    return BlocProvider(
-      create: (_) => HomeScreenBloc(QuranRepository())..add(GetSurahList()),
-      child: Scaffold(
-        appBar: AppBar(title: Text('Daftar Surah')),
-        body: BlocBuilder<HomeScreenBloc, HomeScreenState>(
-          builder: (context, state) {
-            if (state is HomeScreenLoading) {
-              return Center(child: CircularProgressIndicator());
-            } else if (state is HomeScreenLoaded) {
-              return ListView.builder(
-                itemCount: state.listSurah.length,
-                itemBuilder: (context, index) {
-                  Surah surah = state.listSurah[index];
-                  return ListTile(
-                    title: Text('${surah.nomor}. ${surah.namaLatin}'),
-                    subtitle: Text('${surah.arti} - ${surah.tempatTurun} (${surah.jumlahAyat} ayat)'),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SurahDetailPage(surah: surah),
-                        ),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Daftar Surah')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Cari surah...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: BlocBuilder<HomePageBloc, HomePageState>(
+              builder: (context, state) {
+                if (state is HomePageLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is HomePageLoaded) {
+                  final surahs = state.listSurah;
+                  if (surahs.isEmpty) return const Center(child: Text('Tidak ada hasil'));
+                  return ListView.builder(
+                    itemCount: surahs.length,
+                    itemBuilder: (context, index) {
+                      final surah = surahs[index];
+                      return ListTile(
+                        title: Text('${surah.nomor}. ${surah.namaLatin}'),
+                        subtitle: Text('${surah.arti} - ${surah.tempatTurun} (${surah.jumlahAyat} ayat)'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PlayerPage( number: surah.nomor),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
-                },
-              );
-            }
-            else if (state is HomeScreenError) {
-              return Center(child: Text('Error: ${state.message}'));
-            }
-            return Container();
-          },
-        ),
+                } else if (state is HomePageError) {
+                  return Center(child: Text('Error: ${state.message}'));
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
